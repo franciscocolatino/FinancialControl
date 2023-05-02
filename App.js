@@ -1,9 +1,15 @@
 import { StyleSheet } from 'react-native';
-import SpentPage from './src/pages/SpentPage';
+import { NavigationContainer} from '@react-navigation/native'
+import StackRoute from './src/routes/Stacks'
+import DatabaseInit from './src/services/sqliteDB';
 
 export default function App() {
+
+  new DatabaseInit();
   return (
-    <SpentPage />
+    <NavigationContainer>
+      <StackRoute />
+    </NavigationContainer>
   );
 }
 
