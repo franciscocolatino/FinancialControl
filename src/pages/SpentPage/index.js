@@ -15,45 +15,46 @@ export default function SpentPage({ navigation, route }) {
     const [data, setData] = useState([]);
     const [spentName, setSpentName] = useState('');
     const [spentValue, setSpentValue] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
 
     const expenseId = route.params?.id;
     const expenseName = route.params?.name;
 
+    React.useEffect(() => {
+        // ALTERANDO PRÓPRIEDADES DO ARQUIVO DE NAVEGAÇÃO!
+        navigation.setOptions({ title: expenseName });
+        const unsubscribe = navigation.addListener('beforeRemove', () => {
+            // PARA PEGAR O VALOR ATUAL
+            setData((current) => {
+                sum(current);
+                return [];
+            })
+        })
+        return unsubscribe;
+    }, []);
 
     React.useEffect(() => {
         console.log("o id é " + expenseId);
-        // ALTERANDO PRÓPRIEDADES DO ARQUIVO DE NAVEGAÇÃO!
-        navigation.setOptions({ title: expenseName });
+        if (isLoading) {
+            // PQ NÃO USOU O AWAIT AQUI??
+            // POIS ESSE useEffect por baixo dos planos ele retorna essa função que
+            // por ela mesma, já se torna assíncrona!
+            getAllSpentsByExpense(expenseId);
 
-        // PQ NÃO USOU O AWAIT AQUI??
-        // POIS ESSE useEffect por baixo dos planos ele retorna essa função que
-        // por ela mesma, já se torna assíncrona!
-        getAllSpentsByExpense(expenseId);
-
-        return async () => {
-            await sum();
         }
-
         // quando essas variaveis alteram ele chama essa função!
         // estando vázio, ele será chamado uma vez!
-    }, [])
+    }, [isLoading])
 
-    const sum = async () => {
-        const spentService = new SpentService(DatabaseConnection.getConnection());
+    const sum = async (spents) => {
         const expenseService = new ExpenseService(DatabaseConnection.getConnection());
 
         try {
-            
-            const result = await spentService.getSpentsByExpenseId(expenseId);
-            let total = 0;
-            for (let element of result['_array']) {
-                total += element.spentValue;
-            }
+            const total = spents.reduce((previous, current) => previous + current.spentValue , 0)
             await expenseService.updateById(expenseId, total);
-
         } catch (error) {
             console.log(error);
-            
+
         }
     }
 
@@ -63,6 +64,7 @@ export default function SpentPage({ navigation, route }) {
         try {
             const result = await spentService.getSpentsByExpenseId(id);
             setData(result['_array']);
+            setIsLoading(false);
         } catch (error) {
             console.log(error)
 
@@ -103,8 +105,6 @@ export default function SpentPage({ navigation, route }) {
                         try {
                             await schema.validate(newSpent);
                             await spentService.addSpent(newSpent.spentName, newSpent.spentValue, expenseId);
-                            await getAllSpentsByExpense(expenseId);
-
                         } catch (error) {
                             ToastAndroid.show(error.errors[0], ToastAndroid.SHORT)
                             //console.log(error);
@@ -112,6 +112,7 @@ export default function SpentPage({ navigation, route }) {
                             Keyboard.dismiss();
                             setSpentName('');
                             setSpentValue('');
+                            setIsLoading(true);
                         }
                     }} />
             </View>
@@ -122,16 +123,17 @@ export default function SpentPage({ navigation, route }) {
                         ItemSeparatorComponent={<View style={{ height: 15 }} />}
                         renderItem={({ item }) =>
                             <SpentCard
-                                spentName={item.spentName} 
+                                spentName={item.spentName}
                                 spentValue={item.spentValue}
-                                onLongPress={ async () => {
+                                onLongPress={async () => {
                                     const spentService = new SpentService(DatabaseConnection.getConnection());
 
                                     try {
                                         await spentService.deleteById(item.id);
-                                        await getAllSpentsByExpense(expenseId);
                                     } catch (error) {
                                         console.log(error);
+                                    } finally {
+                                        setIsLoading(true);
                                     }
                                 }} />}
                         keyExtractor={item => item.id}

@@ -1,5 +1,5 @@
 import { View } from 'react-native'
-import { SpentContext } from '../../routes/Tabs';
+import { SpentContext } from '../../contexts/spentContext';
 import SpentModal from './components/spentModal';
 import { styles } from './style';
 import List from './components/list.js';
@@ -15,8 +15,9 @@ export default function AllSpents({ navigation }) {
   const [data, setData] = useState([]);
 
   React.useEffect(() => {
-    // NÃO ESTÁ ATUALIZADO O VALOR!
-    getAllExpenses();
+    const unsubscribe = navigation.addListener('focus', () => getAllExpenses());
+
+    return unsubscribe;
   }, [])
 
   const getAllExpenses = async () => {

@@ -3,10 +3,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import AllSpents from '../../pages/AllSpentsPage';
 import HomePage from '../../pages/HomePage';
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { SpentContext } from '../../contexts/spentContext';
 
 const Tabs = createBottomTabNavigator();
 
-export const SpentContext = React.createContext();
 
 export default function TabsRoute() {
   const [modalVisible, setModalVisible] = useState(false);
